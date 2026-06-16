@@ -1,7 +1,7 @@
-# searchable-dropdown
+# liveselect
 
-[![CI](https://github.com/michaeljfalk/searchable-dropdown/actions/workflows/ci.yml/badge.svg)](https://github.com/michaeljfalk/searchable-dropdown/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/michaeljfalk/searchable-dropdown?sort=semver)](https://github.com/michaeljfalk/searchable-dropdown/releases/latest)
+[![CI](https://github.com/michaeljfalk/liveselect/actions/workflows/ci.yml/badge.svg)](https://github.com/michaeljfalk/liveselect/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/michaeljfalk/liveselect?sort=semver)](https://github.com/michaeljfalk/liveselect/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Dependencies](https://img.shields.io/badge/runtime%20deps-0-brightgreen.svg)](./package.json)
 
@@ -42,54 +42,57 @@ import SearchableDropdown from './dist/searchable-dropdown.mjs';
 
 ## Consuming it in another project
 
-This repo is **public on GitHub** but **not published to the npm registry**, so
-`npm install searchable-dropdown` (public registry) won't find it — install from
-GitHub instead (Option 2). Pick whichever of these fits the consuming project — a
-plain `git pull`/clone is enough, there's nothing to build for the component
-itself.
+The npm package name is **`liveselect`**. Pick whichever path fits the consuming
+project — there's nothing to build for the component itself.
 
 > The only thing a host app needs to install is its own `express` + `mongodb`
 > **if** you use the MongoDB server helper (`server/searchable-dropdown-mongo.js`).
 > The browser side needs nothing.
 
-### Option 1 — Copy the files (simplest for plain HTML / EJS / Blaze)
+### Option 1 — npm (best for bundler apps)
+
+```bash
+npm install liveselect
+```
+
+```js
+import SearchableDropdown from 'liveselect';                 // → dist/.mjs
+import 'liveselect/css';                                     // if your bundler imports CSS
+// server side:
+const { registerEntry, createSearchableDropdownRouter } = require('liveselect/server');
+```
+
+> The class is exported as `SearchableDropdown` (the package is `liveselect`).
+
+### Option 2 — `npm install` straight from GitHub (no registry needed)
+
+`package.json` declares `main`/`module`/`exports`/`files`, so npm can install it
+directly from the public GitHub repo:
+
+```bash
+npm install github:michaeljfalk/liveselect
+# or pin to a tag/commit for reproducible installs:
+npm install github:michaeljfalk/liveselect#v1.0.0
+```
+
+### Option 3 — Copy the files (simplest for plain HTML / EJS / Blaze)
 
 The front-end is just `<script>` + `<link>`, so drop the files into your static
 assets and reference them. To grab them without cloning the whole repo:
 
 ```bash
-mkdir -p public/vendor/searchable-dropdown
+mkdir -p public/vendor/liveselect
 for f in searchable-dropdown.js searchable-dropdown.mjs searchable-dropdown.css searchable-dropdown-auto.js; do
-  curl -fsSL "https://raw.githubusercontent.com/michaeljfalk/searchable-dropdown/main/dist/$f" \
-    -o "public/vendor/searchable-dropdown/$f"
+  curl -fsSL "https://raw.githubusercontent.com/michaeljfalk/liveselect/main/dist/$f" \
+    -o "public/vendor/liveselect/$f"
 done
 # using the MongoDB backend too? also copy server/searchable-dropdown-mongo.js
 ```
 
-### Option 2 — `npm install` straight from GitHub (best for bundler apps)
-
-`package.json` declares `main`/`module`/`exports`/`files`, so npm can install it
-directly from the public GitHub repo — no registry or auth required:
+### Option 4 — git submodule (track it and `git pull` updates)
 
 ```bash
-npm install github:michaeljfalk/searchable-dropdown
-# or pin to a tag/commit for reproducible installs:
-npm install github:michaeljfalk/searchable-dropdown#v1.0.0
-```
-
-Then import via the package name:
-
-```js
-import SearchableDropdown from 'searchable-dropdown';          // → dist/.mjs
-import 'searchable-dropdown/css';                              // if your bundler imports CSS
-// server side:
-const { registerEntry, createSearchableDropdownRouter } = require('searchable-dropdown/server');
-```
-
-### Option 3 — git submodule (track it and `git pull` updates)
-
-```bash
-git submodule add https://github.com/michaeljfalk/searchable-dropdown.git vendor/searchable-dropdown
+git submodule add https://github.com/michaeljfalk/liveselect.git vendor/liveselect
 git submodule update --remote   # pull updates later
 ```
 

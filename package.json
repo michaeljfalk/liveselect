@@ -1,5 +1,5 @@
 {
-  "name": "searchable-dropdown",
+  "name": "liveselect",
   "version": "1.0.0",
   "description": "Framework-agnostic, dependency-free searchable dropdown / combobox with array or MongoDB sources, a [+ Add new] create flow, and a drop-in <select> replacement.",
   "scripts": {
@@ -19,7 +19,9 @@
   "files": [
     "dist/",
     "server/",
-    "IMPLEMENTATION.md"
+    "IMPLEMENTATION.md",
+    "CHANGELOG.md",
+    "SECURITY.md"
   ],
   "keywords": [
     "dropdown",
@@ -46,6 +48,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/michaeljfalk/searchable-dropdown.git"
+    "url": "git+https://github.com/michaeljfalk/liveselect.git"
   }
 }

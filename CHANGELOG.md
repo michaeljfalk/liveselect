@@ -36,4 +36,4 @@ extracted and hardened from the Meteor/Blaze `dispatchSelect` picker.
   MongoDB) covering the audited security guarantees. CI on Node 18/20/22.
 - Documentation: `README.md`, `IMPLEMENTATION.md`, `SECURITY.md`.
 
-[1.0.0]: https://github.com/michaeljfalk/searchable-dropdown/releases/tag/v1.0.0
+[1.0.0]: https://github.com/michaeljfalk/liveselect/releases/tag/v1.0.0

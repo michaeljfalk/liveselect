@@ -5,7 +5,7 @@
 Please report security issues **privately** — do not open a public issue for
 anything exploitable.
 
-- Preferred: open a [GitHub private security advisory](https://github.com/michaeljfalk/searchable-dropdown/security/advisories/new).
+- Preferred: open a [GitHub private security advisory](https://github.com/michaeljfalk/liveselect/security/advisories/new).
 - Or email **michael@co-pilot.ca** with details and, ideally, a reproduction.
 
 You can expect an initial acknowledgement within a few business days. Once a fix

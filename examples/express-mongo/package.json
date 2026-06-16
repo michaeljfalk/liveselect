@@ -1,5 +1,5 @@
 {
-  "name": "searchable-dropdown-express-mongo-example",
+  "name": "liveselect-express-mongo-example",
   "private": true,
   "version": "1.0.0",
   "description": "Express + MongoDB + EJS demo for searchable-dropdown",
