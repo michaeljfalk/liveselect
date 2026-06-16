@@ -46,7 +46,7 @@ function meteorSource(collectionKey) {
 
 Template.liveSelect.onRendered(function () {
   const data = Template.currentData() || {};
-  const mount = this.find('.sdd-blaze-mount');
+  const mount = this.find('.liveselect-blaze-mount');
 
   const opts = {
     name:        data.name || '',
@@ -69,9 +69,9 @@ Template.liveSelect.onRendered(function () {
     opts.source = [];
   }
 
-  this._sdd = new LiveSelect(mount, opts);
+  this._liveselect = new LiveSelect(mount, opts);
 });
 
 Template.liveSelect.onDestroyed(function () {
-  if (this._sdd) this._sdd.destroy();
+  if (this._liveselect) this._liveselect.destroy();
 });

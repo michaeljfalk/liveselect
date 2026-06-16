@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LiveSelect — vanilla demo</title>
 
-  <!-- 1. The stylesheet (themeable via --sdd-* custom properties). -->
+  <!-- 1. The stylesheet (themeable via --liveselect-* custom properties). -->
   <link rel="stylesheet" href="../dist/liveselect.css">
 
   <style>
@@ -15,7 +15,7 @@
     form { margin: 0; }
     button.go { margin-top: 14px; padding: 9px 16px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; cursor: pointer; }
     /* Example theme override scoped to one field: */
-    #themed .sdd { --sdd-border: #7c3aed; --sdd-accent: #7c3aed; --sdd-radius: 14px; }
+    #themed .liveselect { --liveselect-border: #7c3aed; --liveselect-accent: #7c3aed; --liveselect-radius: 14px; }
   </style>
 </head>
 <body>
@@ -78,8 +78,8 @@
     });
 
     // Listen via the bubbling CustomEvent instead of a callback if you prefer:
-    document.getElementById('form1').addEventListener('sdd:change', function (e) {
-      console.log('sdd:change event →', e.detail);
+    document.getElementById('form1').addEventListener('liveselect:change', function (e) {
+      console.log('liveselect:change event →', e.detail);
     });
     document.getElementById('form1').addEventListener('submit', function (e) {
       e.preventDefault();

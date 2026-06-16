@@ -3,6 +3,24 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [3.0.0] - 2026-06-16
+
+### Changed (breaking)
+- **Renamed the CSS class prefix `sdd` → `liveselect`.** All BEM classes change
+  (e.g. `sdd__opt` → `liveselect__opt`, `sdd--open` → `liveselect--open`,
+  `sdd--dark` → `liveselect--dark`). Update any custom stylesheets. The
+  `classPrefix` option default is now `'liveselect'`.
+- **Renamed the CSS custom properties `--sdd-*` → `--liveselect-*`** (e.g.
+  `--sdd-border` → `--liveselect-border`). Update theme overrides.
+- **Renamed the change event `sdd:change` → `liveselect:change`.** Update
+  `addEventListener` calls.
+- **Renamed the declarative auto-mount attribute `data-sdd-mount` →
+  `data-liveselect-mount`** (and the internal `data-sdd-*` selectors). The
+  config attributes (`data-name`, `data-label`, `data-api-*`, …) are unchanged.
+
+With this the package is fully consistent under the `liveselect` name — no
+`sdd`/`SearchableDropdown` identifiers remain in the public surface.
+
 ## [2.0.0] - 2026-06-16
 
 ### Changed (breaking)
@@ -61,5 +79,6 @@ First public release — a framework-agnostic, dependency-free searchable dropdo
   MongoDB) covering the audited security guarantees. CI on Node 18/20/22.
 - Documentation: `README.md`, `IMPLEMENTATION.md`, `SECURITY.md`.
 
+[3.0.0]: https://github.com/michaeljfalk/liveselect/releases/tag/v3.0.0
 [2.0.0]: https://github.com/michaeljfalk/liveselect/releases/tag/v2.0.0
 [1.0.0]: https://github.com/michaeljfalk/liveselect/releases/tag/v1.0.0

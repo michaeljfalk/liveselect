@@ -40,7 +40,7 @@
   <script src="/dist/liveselect-auto.js"></script>
   <script>
     // The declarative control (A) reports through the bubbling CustomEvent.
-    document.getElementById('formA').addEventListener('sdd:change', function (e) {
+    document.getElementById('formA').addEventListener('liveselect:change', function (e) {
       document.getElementById('outA').textContent =
         'value: ' + JSON.stringify(e.detail.value) + (e.detail.option ? '  (' + e.detail.option.label + ')' : '');
     });

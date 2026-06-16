@@ -11,7 +11,7 @@
  * HOW:  A single vanilla-JS class with zero dependencies. State lives on the
  *       instance; the menu re-renders on change while the <input> persists so
  *       focus/caret are never lost. Selection is emitted two ways: a bubbling
- *       `sdd:change` CustomEvent AND an optional `onChange(value, option)`
+ *       `liveselect:change` CustomEvent AND an optional `onChange(value, option)`
  *       callback. The control can be "controlled" (you pass `value`) or
  *       uncontrolled (you omit it and listen for changes).
  *
@@ -46,7 +46,7 @@
  *                 POST to a server, push to the array); return the new option to
  *                 auto-select it, or null to cancel.
  *   onChange      (value, option) => void — called on every selection/clear
- *   classPrefix   CSS class prefix (default 'sdd')
+ *   classPrefix   CSS class prefix (default 'liveselect')
  *   texts         { searching, noResults, searchFailed } message overrides
  *
  * The option shape the control works in:  { value, label, sublabel?, raw? }
@@ -120,7 +120,7 @@
 
     this.opts = options || {};
     this.host = host;
-    this.cp   = this.opts.classPrefix || 'sdd';
+    this.cp   = this.opts.classPrefix || 'liveselect';
     this.texts = Object.assign({}, DEFAULT_TEXTS, this.opts.texts || {});
 
     // state
@@ -159,7 +159,7 @@
 
     var root = document.createElement('div');
     root.className = cp;
-    root.setAttribute('data-sdd', '');
+    root.setAttribute('data-liveselect', '');
     if (o.disabled) root.classList.add(cp + '--disabled');
 
     var labelHtml = '';
@@ -174,22 +174,22 @@
         '<input type="text" class="' + cp + '__input" autocomplete="off" spellcheck="false"' +
           (o.disabled ? ' disabled' : '') +
           ' placeholder="' + escapeHtml(o.placeholder || 'Search…') + '"' +
-          ' role="combobox" aria-expanded="false" aria-autocomplete="list" data-sdd-input>' +
-        '<button type="button" class="' + cp + '__clear" data-sdd-clear aria-label="Clear selection" hidden>&times;</button>' +
-        '<div class="' + cp + '__menu" role="listbox" data-sdd-menu hidden></div>' +
+          ' role="combobox" aria-expanded="false" aria-autocomplete="list" data-liveselect-input>' +
+        '<button type="button" class="' + cp + '__clear" data-liveselect-clear aria-label="Clear selection" hidden>&times;</button>' +
+        '<div class="' + cp + '__menu" role="listbox" data-liveselect-menu hidden></div>' +
       '</div>' +
-      '<span class="' + cp + '__error" data-sdd-error hidden></span>' +
-      '<input type="hidden" data-sdd-hidden' +
+      '<span class="' + cp + '__error" data-liveselect-error hidden></span>' +
+      '<input type="hidden" data-liveselect-hidden' +
         (o.name ? ' name="' + escapeHtml(o.name) + '"' : '') +
         (o.required ? ' required' : '') + ' value="">';
 
     this.host.appendChild(root);
     this.root    = root;
-    this.input   = root.querySelector('[data-sdd-input]');
-    this.clearEl = root.querySelector('[data-sdd-clear]');
-    this.menu    = root.querySelector('[data-sdd-menu]');
-    this.errorEl = root.querySelector('[data-sdd-error]');
-    this.hidden  = root.querySelector('[data-sdd-hidden]');
+    this.input   = root.querySelector('[data-liveselect-input]');
+    this.clearEl = root.querySelector('[data-liveselect-clear]');
+    this.menu    = root.querySelector('[data-liveselect-menu]');
+    this.errorEl = root.querySelector('[data-liveselect-error]');
+    this.hidden  = root.querySelector('[data-liveselect-hidden]');
   };
 
   // -- event binding ---------------------------------------------------------
@@ -215,11 +215,11 @@
 
     // mousedown (not click) so it fires before the input's blur closes the menu
     this._onMenuDown = function (e) {
-      var optEl = e.target.closest('[data-sdd-opt]');
-      var createEl = e.target.closest('[data-sdd-create]');
+      var optEl = e.target.closest('[data-liveselect-opt]');
+      var createEl = e.target.closest('[data-liveselect-create]');
       if (optEl) {
         e.preventDefault();
-        var opt = self.results[Number(optEl.getAttribute('data-sdd-index'))];
+        var opt = self.results[Number(optEl.getAttribute('data-liveselect-index'))];
         if (opt) self._select(opt);
       } else if (createEl) {
         e.preventDefault();
@@ -382,7 +382,7 @@
     if (typeof this.opts.onChange === 'function') {
       try { this.opts.onChange(value, opt || null); } catch (e) { /* swallow */ }
     }
-    this.root.dispatchEvent(new CustomEvent('sdd:change', {
+    this.root.dispatchEvent(new CustomEvent('liveselect:change', {
       bubbles: true,
       detail: { name: this.opts.name || '', value: value, option: opt || null },
     }));
@@ -435,7 +435,7 @@
         var o = this.results[i];
         var active = this.activeIndex === i ? (' ' + cp + '__opt--active') : '';
         html += '<button type="button" role="option" class="' + cp + '__opt' + active + '"'
-          + ' data-sdd-opt data-sdd-index="' + i + '">'
+          + ' data-liveselect-opt data-liveselect-index="' + i + '">'
           + '<span class="' + cp + '__opt-label">' + escapeHtml(o.label) + '</span>'
           + (o.sublabel ? '<span class="' + cp + '__opt-sub">' + escapeHtml(o.sublabel) + '</span>' : '')
           + '</button>';
@@ -451,7 +451,7 @@
           ? this.opts.createLabel(this.query.trim())
           : '+ Add “' + this.query.trim() + '”';
         html += '<button type="button" class="' + cp + '__opt ' + cp + '__opt--create' + createActive + '"'
-          + ' data-sdd-create>' + escapeHtml(label) + '</button>';
+          + ' data-liveselect-create>' + escapeHtml(label) + '</button>';
       }
     }
     this.menu.innerHTML = html;
@@ -580,12 +580,12 @@
     var mount = document.createElement('div');
     sel.parentNode.insertBefore(mount, sel);
     sel.style.display = 'none';
-    sel.setAttribute('data-sdd-enhanced', '');
+    sel.setAttribute('data-liveselect-enhanced', '');
     // A `required` control that is display:none is NOT focusable, which makes
     // browsers (e.g. Chrome) silently block form submit with "An invalid form
     // control is not focusable." Drop required from the now-hidden select; we
     // keep the `*` marker on the visible control and recommend validating via
-    // the sdd:change event or on the server.
+    // the liveselect:change event or on the server.
     if (wasRequired) sel.required = false;
 
     var opts = Object.assign({

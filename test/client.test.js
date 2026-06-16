@@ -4,7 +4,7 @@
  * Covers the audit-relevant client behavior as regression tests:
  *   - option label/sublabel are HTML-escaped (no XSS from data sources)
  *   - the hidden input mirrors the selected value (plain-form submission)
- *   - sdd:change bubbles with the right detail
+ *   - liveselect:change bubbles with the right detail
  *   - enhance() removes `required` from the hidden <select> (focusability bug)
  *   - normalizeOption coerces loose input
  */
@@ -62,10 +62,10 @@ test('menu escapes HTML in labels/sublabels (no XSS injection)', { skip: !domAva
   dd.destroy();
 });
 
-test('hidden input mirrors selected value and sdd:change bubbles', { skip: !domAvailable }, () => {
+test('hidden input mirrors selected value and liveselect:change bubbles', { skip: !domAvailable }, () => {
   const host = mount();
   let detail = null;
-  host.addEventListener('sdd:change', (e) => { detail = e.detail; });
+  host.addEventListener('liveselect:change', (e) => { detail = e.detail; });
 
   const dd = new LiveSelect(host, {
     name: 'fruit',

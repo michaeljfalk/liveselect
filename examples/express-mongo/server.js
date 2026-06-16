@@ -22,7 +22,7 @@ const {
   createLiveSelectRouter,
 } = require('../../server/liveselect-mongo');
 
-const DB_NAME = process.env.DB_NAME || 'sdd_demo';
+const DB_NAME = process.env.DB_NAME || 'liveselect_demo';
 const PORT    = process.env.PORT    || 3000;
 
 /**

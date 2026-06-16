@@ -18,7 +18,7 @@ Node/Express, EJS templates, and Blaze**.
 - 🗂 **Any data source** — a plain **array** _or_ an **async function** (wire it to **MongoDB** via the included Express backend, or anything else).
 - ➕ **`[+ Add new]` row** — appears when the typed text has no match; your `onCreate` can do _anything_ (open a modal, POST to a server, push to an array) and return the new option to auto-select it.
 - 🔁 **Drop-in `<select>` replacement** — `LiveSelect.enhance(selectEl)` upgrades an existing `<select>` in place; a hidden `<input name>` means it submits inside a plain `<form>` like a native control.
-- 🎨 **Fully themeable** — restyle with `--sdd-*` CSS custom properties or target the BEM-ish classes; ships a light and dark theme.
+- 🎨 **Fully themeable** — restyle with `--liveselect-*` CSS custom properties or target the BEM-ish classes; ships a light and dark theme.
 - 🔒 **Security-hardened server** — registry-gated collection access, field allow-listing, ReDoS-capped regex, scope filters, tenant isolation hook, prototype-pollution guards.
 - 📦 **Zero dependencies**, ~12 KB. Works as a `<script>` tag (`window.LiveSelect`), a CommonJS `require`, or an ES module `import`.
 
@@ -170,7 +170,7 @@ per-framework integration (HTML, Express, EJS, Blaze).
 | `createLabel` | `(q) => string` | `+ Add "q"` | Add-row label. |
 | `onCreate` | `async (q, ctx) => option\|null` | — | Do anything; return an option to auto-select. |
 | `onChange` | `(value, option) => void` | — | Fires on every selection/clear. |
-| `classPrefix` | `string` | `'sdd'` | CSS class prefix. |
+| `classPrefix` | `string` | `'liveselect'` | CSS class prefix. |
 | `texts` | `object` | — | `{ searching, noResults, searchFailed }`. |
 
 **Option shape:** `{ value, label, sublabel?, raw? }`. Loose input is normalized —
@@ -188,10 +188,10 @@ setDisabled(bool) · destroy()
 ## Events
 
 Besides the `onChange` callback, the control dispatches a **bubbling**
-`sdd:change` CustomEvent on its root element:
+`liveselect:change` CustomEvent on its root element:
 
 ```js
-form.addEventListener('sdd:change', (e) => {
+form.addEventListener('liveselect:change', (e) => {
   console.log(e.detail); // { name, value, option }
 });
 ```
@@ -201,10 +201,10 @@ form.addEventListener('sdd:change', (e) => {
 Override any token, globally or scoped to one control:
 
 ```css
-.sdd { --sdd-border: #7c3aed; --sdd-accent: #7c3aed; --sdd-radius: 14px; }
+.liveselect { --liveselect-border: #7c3aed; --liveselect-accent: #7c3aed; --liveselect-radius: 14px; }
 ```
 
-Add `class="sdd--dark"` for the built-in dark theme. Full token list is at the
+Add `class="liveselect--dark"` for the built-in dark theme. Full token list is at the
 top of `dist/liveselect.css`.
 
 ## Tests
@@ -215,7 +215,7 @@ npm test      # Node's built-in runner (node --test)
 ```
 
 The suite (in `test/`) covers the client in jsdom (HTML-escaping/XSS, the hidden
-input form mirror, `sdd:change`, `enhance()`), the pure server helpers, and the
+input form mirror, `liveselect:change`, `enhance()`), the pure server helpers, and the
 router against an in-memory MongoDB — including the security regressions from the
 audit (no document disclosure, generic errors, NoSQL operator-injection,
 allow-listing, dedup). CI runs them on Node 18/20/22 (`.github/workflows/ci.yml`).

@@ -10,7 +10,7 @@
  * LOAD ORDER: include liveselect.js first, then this file.
  *
  * MARKUP:
- *   <div data-sdd-mount
+ *   <div data-liveselect-mount
  *        data-name="customerId"
  *        data-label="Customer"
  *        data-placeholder="Search customers…"
@@ -23,7 +23,7 @@
  *   ></div>
  *
  * Provide EITHER data-api-base + data-api-key (remote) OR data-options (array).
- * Each mounted element gets `el._sdd` set to its LiveSelect instance.
+ * Each mounted element gets `el._liveselect` set to its LiveSelect instance.
  */
 (function () {
   'use strict';
@@ -31,7 +31,7 @@
   function bool(v) { return v === '' || v === 'true' || v === '1'; }
 
   function mountOne(el) {
-    if (el._sdd) return; // already mounted
+    if (el._liveselect) return; // already mounted
     var SD = (typeof self !== 'undefined' ? self : window).LiveSelect;
     if (!SD) { if (typeof console !== 'undefined') console.error('liveselect.js must load before -auto.js'); return; }
 
@@ -61,12 +61,12 @@
       opts.source = [];
     }
 
-    el._sdd = new SD(el, opts);
+    el._liveselect = new SD(el, opts);
   }
 
   function mountAll(root) {
     var scope = root || document;
-    var nodes = scope.querySelectorAll('[data-sdd-mount]');
+    var nodes = scope.querySelectorAll('[data-liveselect-mount]');
     for (var i = 0; i < nodes.length; i++) mountOne(nodes[i]);
   }
 

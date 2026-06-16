@@ -176,11 +176,11 @@ auto-mount helper reads:
 ```
 
 The partial ([`examples/express-mongo/views/_dropdown.ejs`](./examples/express-mongo/views/_dropdown.ejs))
-emits a single `<div data-sdd-mount …>`; no inline JS, no XSS surface. You can
+emits a single `<div data-liveselect-mount …>`; no inline JS, no XSS surface. You can
 also hand-author the markup:
 
 ```html
-<div data-sdd-mount
+<div data-liveselect-mount
      data-name="customerId" data-label="Customer"
      data-api-base="/api/dropdown" data-api-key="customers"
      data-allow-create="true"></div>
@@ -210,19 +210,19 @@ back it with Meteor methods (`<key>.search` / `<key>.option`). Vendor
 
 ## 7. Theming to match your app
 
-Everything reads from `--sdd-*` custom properties (see the top of
+Everything reads from `--liveselect-*` custom properties (see the top of
 `liveselect.css`). The fastest path to "matches our other inputs":
 
 ```css
-.sdd {
-  --sdd-border:       var(--your-input-border);
-  --sdd-radius:       var(--your-input-radius);
-  --sdd-accent:       var(--your-brand);
-  --sdd-border-focus: var(--your-focus-ring);
+.liveselect {
+  --liveselect-border:       var(--your-input-border);
+  --liveselect-radius:       var(--your-input-radius);
+  --liveselect-accent:       var(--your-brand);
+  --liveselect-border-focus: var(--your-focus-ring);
 }
 ```
 
-Scope overrides to one field by nesting under an ancestor, add `class="sdd--dark"`
+Scope overrides to one field by nesting under an ancestor, add `class="liveselect--dark"`
 for the built-in dark theme, or set `classPrefix` to namespace the classes
 entirely.
 
@@ -274,4 +274,4 @@ hidden mirror input isn't — so the control's `required` option drives the `*`
 marker but does **not** block submission on its own. `enhance()` deliberately
 removes `required` from the hidden `<select>` to avoid the "An invalid form
 control is not focusable" submit-blocking bug. Enforce required selections via
-the `sdd:change` event (client) and/or on the server.
+the `liveselect:change` event (client) and/or on the server.
