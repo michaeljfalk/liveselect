@@ -8,9 +8,9 @@
 A **framework-agnostic, dependency-free** searchable dropdown / combobox — one
 control to replace native `<select>`s so every input looks uniform.
 
-It is a portable rewrite of the Meteor/Blaze `dispatchSelect` picker, with the
-framework coupling stripped out. The same `dist/searchable-dropdown.js` + `.css`
-run in **plain HTML + vanilla JS, Node/Express, EJS templates, and Blaze**.
+No framework, no build step, no dependencies. The same
+`dist/searchable-dropdown.js` + `.css` run in **plain HTML + vanilla JS,
+Node/Express, EJS templates, and Blaze**.
 
 ## Features
 

@@ -206,11 +206,6 @@ Provide a reactive `options` array for a local source, or a `collectionKey` to
 back it with Meteor methods (`<key>.search` / `<key>.option`). Vendor
 `dist/searchable-dropdown.js` somewhere importable and load the `.css` once.
 
-> Migrating from the original `dispatchSelect`? The option shape changed
-> `_id → value` (still accepted as input), and the event renamed
-> `dispatchselect-change → sdd:change`. The registry concepts (searchFields,
-> scopeMap, quickCreate) map 1:1 onto the Express backend's entry config.
-
 ---
 
 ## 7. Theming to match your app
@@ -235,8 +230,7 @@ entirely.
 
 ## 8. Security model
 
-Ported from the original `dispatchSelect` doctrine and enforced by the Express
-backend:
+Enforced by the Express backend:
 
 - **The client only ever sends a registry KEY** — never a collection or field
   name. Unknown keys → `404`.

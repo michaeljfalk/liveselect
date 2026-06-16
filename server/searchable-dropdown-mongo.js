@@ -7,9 +7,8 @@
  *         GET  /:key/option/:id                   → resolve one id → option
  *         POST /:key/create                        → quick-create + return option
  *
- * WHY:  Ported from the original Meteor `dispatchSelect` registry model. Most
- *       collection-backed pickers need the SAME guarantees, so they live here
- *       once: the client only ever sends a registry KEY (never a collection or
+ * WHY:  Most collection-backed pickers need the SAME guarantees, so they live
+ *       here once: the client only ever sends a registry KEY (never a collection or
  *       field name), searchable fields are allow-listed, user input is regex-
  *       escaped and length-capped (ReDoS guard), scope filters are allow-listed,
  *       and an optional per-request tenant filter is merged into every selector.

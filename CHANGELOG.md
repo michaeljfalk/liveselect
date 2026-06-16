@@ -6,7 +6,7 @@ All notable changes to this project are documented here. This project adheres to
 ## [1.0.0] - 2026-06-16
 
 First public release — a framework-agnostic, dependency-free searchable dropdown
-extracted and hardened from the Meteor/Blaze `dispatchSelect` picker.
+/ combobox.
 
 ### Added
 - **Browser control** (`dist/searchable-dropdown.js`, UMD + `.mjs` ESM entry):
