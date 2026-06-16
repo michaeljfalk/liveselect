@@ -1,6 +1,9 @@
 {
-  "name": "liveselect",
+  "name": "@michaeljfalk/liveselect",
   "version": "1.0.0",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Framework-agnostic, dependency-free searchable dropdown / combobox with array or MongoDB sources, a [+ Add new] create flow, and a drop-in <select> replacement.",
   "scripts": {
     "test": "node --test"

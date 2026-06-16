@@ -42,8 +42,9 @@ import SearchableDropdown from './dist/searchable-dropdown.mjs';
 
 ## Consuming it in another project
 
-The npm package name is **`liveselect`**. Pick whichever path fits the consuming
-project — there's nothing to build for the component itself.
+The npm package name is **`@michaeljfalk/liveselect`** (scoped — the bare
+`liveselect` was blocked by npm's name-similarity guard). Pick whichever path
+fits the consuming project — there's nothing to build for the component itself.
 
 > The only thing a host app needs to install is its own `express` + `mongodb`
 > **if** you use the MongoDB server helper (`server/searchable-dropdown-mongo.js`).
@@ -52,17 +53,17 @@ project — there's nothing to build for the component itself.
 ### Option 1 — npm (best for bundler apps)
 
 ```bash
-npm install liveselect
+npm install @michaeljfalk/liveselect
 ```
 
 ```js
-import SearchableDropdown from 'liveselect';                 // → dist/.mjs
-import 'liveselect/css';                                     // if your bundler imports CSS
+import SearchableDropdown from '@michaeljfalk/liveselect';                 // → dist/.mjs
+import '@michaeljfalk/liveselect/css';                                     // if your bundler imports CSS
 // server side:
-const { registerEntry, createSearchableDropdownRouter } = require('liveselect/server');
+const { registerEntry, createSearchableDropdownRouter } = require('@michaeljfalk/liveselect/server');
 ```
 
-> The class is exported as `SearchableDropdown` (the package is `liveselect`).
+> The class is exported as `SearchableDropdown` (the package is `@michaeljfalk/liveselect`).
 
 ### Option 2 — `npm install` straight from GitHub (no registry needed)
 
