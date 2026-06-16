@@ -575,10 +575,18 @@
       if (op.selected) { initial = op.value; initialLabel = op.textContent.trim(); }
     }
 
+    var wasRequired = sel.required;
+
     var mount = document.createElement('div');
     sel.parentNode.insertBefore(mount, sel);
     sel.style.display = 'none';
     sel.setAttribute('data-sdd-enhanced', '');
+    // A `required` control that is display:none is NOT focusable, which makes
+    // browsers (e.g. Chrome) silently block form submit with "An invalid form
+    // control is not focusable." Drop required from the now-hidden select; we
+    // keep the `*` marker on the visible control and recommend validating via
+    // the sdd:change event or on the server.
+    if (wasRequired) sel.required = false;
 
     var opts = Object.assign({
       source: source,
@@ -586,7 +594,7 @@
       value: initial,
       valueLabel: initialLabel,
       placeholder: placeholder || (extra && extra.placeholder) || 'Search…',
-      required: sel.required,
+      required: wasRequired,
       disabled: sel.disabled,
     }, extra || {});
 
@@ -603,8 +611,10 @@
       if (typeof userOnChange === 'function') userOnChange(value, option);
     };
 
-    // The hidden select already carries the form value; avoid a duplicate field.
-    if (opts.name) { opts._mirrorName = opts.name; opts.name = ''; }
+    // The original <select> still carries the form value (we sync into it on
+    // change), so blank the control's own hidden-input name to avoid submitting
+    // the same field twice.
+    opts.name = '';
 
     return new SearchableDropdown(mount, opts);
   };

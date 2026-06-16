@@ -63,6 +63,13 @@ function escapeRegExp(s) {
   return String(s).slice(0, MAX_TERM_LEN).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Neutralize a user-supplied string before it goes into a log line: strip
+// anything but word chars/dash and cap length, so it can't forge log entries
+// (CRLF injection) or smuggle format specifiers.
+function safeForLog(s) {
+  return String(s == null ? '' : s).replace(/[^\w-]/g, '').slice(0, 64);
+}
+
 function getByPath(obj, path) {
   if (!obj || !path) return undefined;
   return path.split('.').reduce((acc, k) => (acc == null ? acc : acc[k]), obj);
@@ -90,6 +97,11 @@ function joinParts(parts) {
  *   tenantFilter     {function}    optional (req) => selectorFragment merged into every query
  *   idField          {string}      optional id field for /option/:id (default '_id')
  *   castId           {function}    optional (idString) => castedId (e.g. new ObjectId(id))
+ *   projection       {object}      optional Mongo projection to limit fields read
+ *                                  (e.g. { name:1, email:1 }); excludes everything else
+ *   exposeRaw        {boolean}     optional if true, include the (projected) doc as
+ *                                  option.raw in responses. OFF by default — the full
+ *                                  document is never sent unless you opt in.
  *   create           {object|null} optional quick-create config:
  *     fields         {object[]}    [{ key, label, required }]
  *     dedupField     {string}      input key checked against displayField for dedup
@@ -113,6 +125,14 @@ function registerEntry(key, cfg) {
 
 function getEntry(key) { return _registry.get(key) || null; }
 
+/**
+ * toOption — map a DB doc to the wire shape { value, label, sublabel }.
+ *
+ * SECURITY: the full document is NEVER sent by default. `raw` is only attached
+ * when the entry sets `exposeRaw: true` (and then it's the projected doc, so use
+ * `projection` to control exactly which fields a client can see). This prevents
+ * accidental disclosure of sensitive columns that aren't part of the label.
+ */
 function toOption(entry, doc) {
   if (!doc) return null;
   const rawLabel = typeof entry.displayLabel === 'function'
@@ -122,12 +142,23 @@ function toOption(entry, doc) {
   if (typeof entry.sublabel === 'function') sublabel = entry.sublabel(doc) || '';
   else if (Array.isArray(entry.sublabelFields)) sublabel = joinParts(entry.sublabelFields.map((p) => getByPath(doc, p)));
   const idField = entry.idField || '_id';
-  return {
+  const opt = {
     value:    String(getByPath(doc, idField)),
     label:    rawLabel == null || rawLabel === '' ? '(unnamed)' : String(rawLabel),
     sublabel,
-    raw:      doc,
   };
+  if (entry && entry.exposeRaw) opt.raw = doc; // opt-in only
+  return opt;
+}
+
+/**
+ * findOptions — Mongo find options for an entry. Applies the optional
+ * `projection` so sensitive fields can be excluded at the DB level (defence in
+ * depth + smaller payloads). If you use a `displayLabel`/`sublabel` function or
+ * `exposeRaw`, make sure the projection still includes the fields they read.
+ */
+function findOptions(entry) {
+  return entry && entry.projection ? { projection: entry.projection } : {};
 }
 
 function baseSelector(entry, req) {
@@ -198,14 +229,15 @@ function createSearchableDropdownRouter(opts = {}) {
       const limit = Math.min(Math.max(1, Number(req.query.limit) || entry.searchLimit || 20), HARD_LIMIT);
 
       const docs = await entry.collection
-        .find(selector)
+        .find(selector, findOptions(entry))
         .sort(setField({}, entry.displayField, 1))
         .limit(limit)
         .toArray();
 
       res.json(docs.map((d) => toOption(entry, d)));
     } catch (err) {
-      res.status(500).json({ error: err.message || 'Search failed.' });
+      console.error('[searchable-dropdown] search failed for key=%s:', safeForLog(req.params.key), err);
+      res.status(500).json({ error: 'Search failed.' });
     }
   });
 
@@ -214,12 +246,22 @@ function createSearchableDropdownRouter(opts = {}) {
     const entry = entryOr404(req, res); if (!entry) return;
     try {
       const idField = entry.idField || '_id';
+      // An un-castable id (e.g. a malformed ObjectId) is just "not found", not
+      // a server error — don't 500 on attacker-supplied junk ids.
+      let castedId;
+      try {
+        castedId = entry.castId ? entry.castId(String(req.params.id)) : String(req.params.id);
+      } catch (e) {
+        res.json(null);
+        return;
+      }
       const selector = baseSelector(entry, req);
-      setField(selector, idField, entry.castId ? entry.castId(req.params.id) : String(req.params.id));
-      const doc = await entry.collection.findOne(selector);
+      setField(selector, idField, castedId);
+      const doc = await entry.collection.findOne(selector, findOptions(entry));
       res.json(doc ? toOption(entry, doc) : null);
     } catch (err) {
-      res.status(500).json({ error: err.message || 'Lookup failed.' });
+      console.error('[searchable-dropdown] option lookup failed for key=%s:', safeForLog(req.params.key), err);
+      res.status(500).json({ error: 'Lookup failed.' });
     }
   });
 
@@ -265,10 +307,11 @@ function createSearchableDropdownRouter(opts = {}) {
       const id = typeof qc.transformId === 'function' ? qc.transformId(result) : result.insertedId;
 
       const idField = entry.idField || '_id';
-      const fresh = await entry.collection.findOne(setField({}, idField, id));
+      const fresh = await entry.collection.findOne(setField({}, idField, id), findOptions(entry));
       res.status(201).json(toOption(entry, fresh || setField({ ...doc }, idField, id)));
     } catch (err) {
-      res.status(500).json({ error: err.message || 'Create failed.' });
+      console.error('[searchable-dropdown] create failed for key=%s:', safeForLog(req.params.key), err);
+      res.status(500).json({ error: 'Create failed.' });
     }
   });
 

@@ -242,15 +242,42 @@ backend:
   name. Unknown keys → `404`.
 - **Field allow-listing** — only `searchFields` are searched; only declared
   `create.fields` keys are accepted on create (defeats mass-assignment).
-- **ReDoS guard** — search terms are length-capped (120 chars) and regex-escaped
-  before they reach Mongo.
+- **No full-document disclosure** — responses contain only `{ value, label,
+  sublabel }` by default. The raw document is **never** sent unless you opt in
+  with `exposeRaw: true`, and you should pair that with a `projection` so only
+  intended fields ever leave the database. This keeps unrelated columns (PII,
+  internal flags, soft-deleted rows) off the wire.
+- **No internal error leakage** — clients get generic messages (`Search failed.`
+  etc.); the real error is logged server-side. User-supplied values are
+  sanitized before logging (no CRLF log-forging / format-string injection).
+- **NoSQL operator-injection safe** — scope values that aren't strings/arrays of
+  strings (e.g. `scope[x][$ne]=`) are ignored; `q`/`limit`/`id` are coerced to
+  string/number, and search terms are length-capped (120 chars) and regex-escaped
+  (ReDoS guard) before reaching Mongo. An un-castable id resolves to `null`, not
+  a 500.
 - **Tenant isolation** — `tenantFilter(req)` is merged into _every_ selector and
   stamped onto created docs server-side; derive it from the authenticated user,
   never trust it from the wire.
 - **Prototype-pollution guards** — config field names are validated to safe
   dotted identifiers at registration; all dynamic key writes refuse
   `__proto__`/`prototype`/`constructor`.
-- **Bring your own auth + CSRF** — pass an `authorize` middleware to the router,
-  and protect the state-changing `POST /create` with your CSRF strategy (the
-  demo ships a minimal same-origin guard; production should use `csurf` or
-  equivalent).
+- **Bring your own auth, CSRF, and rate limiting** — the router ships with none
+  of these (they're app-wide concerns):
+  - pass an `authorize` middleware to `createSearchableDropdownRouter`. Without
+    it (and without `tenantFilter`), the whole collection is searchable by
+    anyone — opt into protection deliberately.
+  - protect the state-changing `POST /create` with your CSRF strategy (the demo
+    ships a minimal same-origin guard; production should use `csurf` or
+    equivalent).
+  - put a rate limiter (e.g. `express-rate-limit`) in front of `/search`, since
+    each call runs a regex query; also add an index covering `searchFields` +
+    the `displayField` sort, or large collections will table-scan.
+
+### A note on `required`
+
+Native browser `required` validation needs a focusable, visible field, which a
+hidden mirror input isn't — so the control's `required` option drives the `*`
+marker but does **not** block submission on its own. `enhance()` deliberately
+removes `required` from the hidden `<select>` to avoid the "An invalid form
+control is not focusable" submit-blocking bug. Enforce required selections via
+the `sdd:change` event (client) and/or on the server.
