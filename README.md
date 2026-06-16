@@ -198,6 +198,20 @@ Override any token, globally or scoped to one control:
 Add `class="sdd--dark"` for the built-in dark theme. Full token list is at the
 top of `dist/searchable-dropdown.css`.
 
+## Tests
+
+```bash
+npm install   # dev deps only: express, mongodb, mongodb-memory-server, jsdom
+npm test      # Node's built-in runner (node --test)
+```
+
+The suite (in `test/`) covers the client in jsdom (HTML-escaping/XSS, the hidden
+input form mirror, `sdd:change`, `enhance()`), the pure server helpers, and the
+router against an in-memory MongoDB — including the security regressions from the
+audit (no document disclosure, generic errors, NoSQL operator-injection,
+allow-listing, dedup). CI runs them on Node 18/20/22 (`.github/workflows/ci.yml`).
+The library itself ships with **zero runtime dependencies**.
+
 ## Repository layout
 
 ```
@@ -212,6 +226,9 @@ examples/
   vanilla.html                  # array source · theming · <select> enhance
   express-mongo/                # Node/Express + MongoDB + EJS demo
   blaze/                        # Meteor/Blaze adapter template
+test/
+  server.test.js                # pure helpers + router vs in-memory MongoDB
+  client.test.js                # client behavior under jsdom
 IMPLEMENTATION.md               # full integration guide
 ```
 

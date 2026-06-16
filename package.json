@@ -2,6 +2,9 @@
   "name": "searchable-dropdown",
   "version": "1.0.0",
   "description": "Framework-agnostic, dependency-free searchable dropdown / combobox with array or MongoDB sources, a [+ Add new] create flow, and a drop-in <select> replacement.",
+  "scripts": {
+    "test": "node --test"
+  },
   "main": "dist/searchable-dropdown.js",
   "module": "dist/searchable-dropdown.mjs",
   "exports": {
@@ -35,6 +38,12 @@
     "dist/searchable-dropdown-auto.js"
   ],
   "license": "MIT",
+  "devDependencies": {
+    "express": "^4.19.2",
+    "jsdom": "^24.1.3",
+    "mongodb": "^6.8.0",
+    "mongodb-memory-server": "^10.1.2"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/michaeljfalk/searchable-dropdown.git"
