@@ -3,6 +3,18 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.0.3] - 2026-06-17
+
+### Fixed
+- **`setSource()` now invalidates rendered results.** Swapping the source while
+  the control was closed left the previous source's options in `this.results`;
+  the focus path's `!results.length` guard then skipped the re-search, so the
+  next open showed stale options (e.g. a dependent Country → Region dropdown
+  never refreshed). `setSource()` now clears `results`/`_total`/`activeIndex`
+  (matching `setScope()`), so the next open reflects the new source. The current
+  selection/value is left untouched. The `setScope({})` workaround is no longer
+  needed.
+
 ## [4.0.2] - 2026-06-17
 
 ### Docs

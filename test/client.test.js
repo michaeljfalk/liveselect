@@ -518,3 +518,41 @@ test('enhance(<select multiple>) upgrades to multi and reflects back', { skip: !
   assert.deepEqual(selected, ['go', 'js', 'py'], 'reflected into the native <select multiple>');
   dd.destroy();
 });
+
+test('setSource() while closed refreshes the menu on next open (no stale options)', { skip: !domAvailable }, () => {
+  const host = mount();
+  const A = [{ value: 'a1', label: 'Apple' }, { value: 'a2', label: 'Apricot' }];
+  const B = [{ value: 'b1', label: 'Banana' }, { value: 'b2', label: 'Blueberry' }];
+  const dd = new LiveSelect(host, { source: A });
+
+  // Open once so results populate from A, then close.
+  dd.query = ''; dd.isOpen = true; dd._runSearch(); dd._renderMenu();
+  assert.equal(dd.results.length, 2);
+  dd.close();
+
+  // Swap the source while closed.
+  dd.setSource(B);
+  assert.deepEqual(dd.results, [], 'rendered results invalidated immediately');
+
+  // Re-open via the focus path → must reflect B, not stale A.
+  dd._onFocus();
+  dd._renderMenu();
+  const labels = Array.from(dd.menu.querySelectorAll('.liveselect__opt-label')).map((s) => s.textContent);
+  assert.deepEqual(labels, ['Banana', 'Blueberry'], 'menu lists the new source');
+  dd.destroy();
+});
+
+test('setSource() leaves the current selection/value intact', { skip: !domAvailable }, () => {
+  const host = mount();
+  const dd = new LiveSelect(host, {
+    name: 'fruit',
+    source: [{ value: 'a1', label: 'Apple' }],
+  });
+  dd._select({ value: 'a1', label: 'Apple', sublabel: '' });
+  assert.equal(dd.getValue(), 'a1');
+
+  dd.setSource([{ value: 'b1', label: 'Banana' }]);   // swap options only
+  assert.equal(dd.getValue(), 'a1', 'selected value survives the source swap');
+  assert.equal(host.querySelector('input[type=hidden][name=fruit]').value, 'a1');
+  dd.destroy();
+});

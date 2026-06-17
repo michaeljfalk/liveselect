@@ -1043,7 +1043,14 @@
   /** Swap the data source (e.g. after pushing a new item to an array). */
   LiveSelect.prototype.setSource = function (source) {
     this.opts.source = source;
-    this._cache = {};   // results from the old source are no longer valid
+    // Invalidate everything rendered from the old source — otherwise a closed
+    // control keeps its stale results, and _onFocus's `!results.length` guard
+    // then skips the re-search on the next open. (The selection/value is left
+    // untouched; only the available options change.)
+    this.results = [];
+    this._total = null;
+    this.activeIndex = -1;
+    this._cache = {};
     if (this.isOpen) this._runSearch();
   };
 
