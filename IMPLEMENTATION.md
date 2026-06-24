@@ -259,8 +259,10 @@ class in `onRendered`, so Blaze never reimplements the picker:
 ```
 
 Provide a reactive `options` array for a local source, or a `collectionKey` to
-back it with Meteor methods (`<key>.search` / `<key>.option`). Vendor
-`dist/liveselect.js` somewhere importable and load the `.css` once.
+back it with Meteor methods (`<key>.search` / `<key>.option`). Under Meteor 3's
+bundler (rspack), `import LiveSelect from '@michaeljfalk/liveselect'` resolves to
+the real ESM build and gives you the class directly; if you vendor the files
+instead, import `dist/liveselect.mjs`. Load the `.css` once.
 
 ---
 

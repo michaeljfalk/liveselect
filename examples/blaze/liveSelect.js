@@ -6,7 +6,7 @@
  *         - a reactive array helper passed as `options`, OR
  *         - a Meteor method via the `methodBase`/`collectionKey` remote source.
  *
- * The same dist/liveselect.js + .css power this; Blaze only mounts it.
+ * The same LiveSelect class + .css power this; Blaze only mounts it.
  *
  * DATA CONTEXT (all optional unless noted):
  *   name           hidden-input name for plain-form usage
@@ -23,8 +23,11 @@
 import { Template } from 'meteor/templating';
 import { Meteor } from 'meteor/meteor';
 
-// Adjust the path to wherever you vendor the dist file in your app.
-import LiveSelect from '/dist/liveselect.js';
+// Under Meteor 3's bundler (rspack), import the package — it resolves to the
+// real ESM build (dist/liveselect.mjs) and gives you the class directly:
+import LiveSelect from '@michaeljfalk/liveselect';
+// (If you vendor the files instead of installing the package, import the ESM
+// build explicitly: `import LiveSelect from '/dist/liveselect.mjs';`)
 
 import './liveSelect.html';
 
