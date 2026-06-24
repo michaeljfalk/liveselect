@@ -1,4 +1,4 @@
-/*! @michaeljfalk/liveselect v4.0.5 | MIT License | https://github.com/michaeljfalk/liveselect */
+/*! @michaeljfalk/liveselect v4.1.0 | MIT License | https://github.com/michaeljfalk/liveselect */
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) define([], factory);
   else if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -902,28 +902,95 @@ var __liveselect__ = (() => {
     this.tagsEl.removeEventListener("mousedown", this._onTagsDown);
     if (this.root && this.root.parentNode) this.root.parentNode.removeChild(this.root);
   };
-  LiveSelect.enhance = function(selectElOrSelector, extra) {
-    var sel = resolveEl(selectElOrSelector);
-    if (!sel || sel.tagName !== "SELECT") throw new Error("LiveSelect.enhance: a <select> is required.");
+  var VISUALLY_HIDDEN = "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0";
+  function readSelectModel(sel) {
     var isMulti = sel.multiple;
     var source = [];
-    var initial = "", initialLabel = "";
-    var initialValues = [], initialLabels = [];
+    var value = "", valueLabel = "";
+    var values = [], labels = [];
     var placeholder = "";
     for (var i = 0; i < sel.options.length; i++) {
       var op = sel.options[i];
-      if (op.value === "" && !placeholder) {
+      if (op.value === "" && !placeholder && !op.selected) {
         placeholder = op.textContent.trim();
         continue;
       }
-      source.push({ value: op.value, label: op.textContent.trim(), sublabel: op.getAttribute("data-sublabel") || "" });
+      source.push({
+        value: op.value,
+        label: op.textContent.trim(),
+        sublabel: op.getAttribute("data-sublabel") || "",
+        disabled: op.disabled
+      });
       if (op.selected) {
-        initial = op.value;
-        initialLabel = op.textContent.trim();
-        initialValues.push(op.value);
-        initialLabels.push(op.textContent.trim());
+        value = op.value;
+        valueLabel = op.textContent.trim();
+        values.push(op.value);
+        labels.push(op.textContent.trim());
       }
     }
+    return {
+      isMulti,
+      source,
+      placeholder,
+      value: isMulti ? values : value,
+      valueLabel: isMulti ? labels : valueLabel
+    };
+  }
+  function selectedSig(sel) {
+    var v = [];
+    for (var i = 0; i < sel.options.length; i++) if (sel.options[i].selected) v.push(sel.options[i].value);
+    return v.sort().join("");
+  }
+  function writeBack(sel, isMulti, value, option, state) {
+    if (state) state.suppress = true;
+    var before = isMulti ? selectedSig(sel) : sel.value;
+    var addedOption = false;
+    if (isMulti) {
+      var set = {};
+      value.forEach(function(v) {
+        set[v] = true;
+      });
+      value.forEach(function(v) {
+        if (!Array.prototype.some.call(sel.options, function(o) {
+          return o.value === v;
+        })) {
+          var added = document.createElement("option");
+          added.value = v;
+          added.textContent = v;
+          sel.appendChild(added);
+          addedOption = true;
+        }
+      });
+      Array.prototype.forEach.call(sel.options, function(o) {
+        o.selected = !!set[o.value];
+      });
+    } else {
+      if (option && !Array.prototype.some.call(sel.options, function(o) {
+        return o.value === value;
+      })) {
+        var newOpt = document.createElement("option");
+        newOpt.value = value;
+        newOpt.textContent = option.label;
+        sel.appendChild(newOpt);
+        addedOption = true;
+      }
+      sel.value = value;
+    }
+    var after = isMulti ? selectedSig(sel) : sel.value;
+    var changed = addedOption || before !== after;
+    if (changed) {
+      sel.dispatchEvent(new Event("input", { bubbles: true }));
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (state) state.suppress = false;
+  }
+  LiveSelect.enhance = function(selectElOrSelector, extra) {
+    var sel = resolveEl(selectElOrSelector);
+    if (!sel || sel.tagName !== "SELECT") throw new Error("LiveSelect.enhance: a <select> is required.");
+    extra = extra || {};
+    if (sel._liveselect) return sel._liveselect;
+    if (extra.live) return enhanceLive(sel, extra);
+    var model = readSelectModel(sel);
     var wasRequired = sel.required;
     var mount = document.createElement("div");
     sel.parentNode.insertBefore(mount, sel);
@@ -931,52 +998,121 @@ var __liveselect__ = (() => {
     sel.setAttribute("data-liveselect-enhanced", "");
     if (wasRequired) sel.required = false;
     var opts = Object.assign({
-      source,
+      source: model.source,
       name: sel.getAttribute("name") || "",
-      value: isMulti ? initialValues : initial,
-      valueLabel: isMulti ? initialLabels : initialLabel,
-      multiple: isMulti,
-      placeholder: placeholder || extra && extra.placeholder || "Search\u2026",
+      value: model.value,
+      valueLabel: model.valueLabel,
+      multiple: model.isMulti,
+      placeholder: model.placeholder || extra.placeholder || "Search\u2026",
       required: wasRequired,
       disabled: sel.disabled
-    }, extra || {});
+    }, extra);
     var userOnChange = opts.onChange;
     opts.onChange = function(value, option) {
-      if (isMulti) {
-        var set = {};
-        value.forEach(function(v) {
-          set[v] = true;
-        });
-        value.forEach(function(v) {
-          if (!Array.prototype.some.call(sel.options, function(o) {
-            return o.value === v;
-          })) {
-            var added = document.createElement("option");
-            added.value = v;
-            added.textContent = v;
-            sel.appendChild(added);
-          }
-        });
-        Array.prototype.forEach.call(sel.options, function(o) {
-          o.selected = !!set[o.value];
-        });
-      } else {
-        if (option && !Array.prototype.some.call(sel.options, function(o) {
-          return o.value === value;
-        })) {
-          var newOpt = document.createElement("option");
-          newOpt.value = value;
-          newOpt.textContent = option.label;
-          sel.appendChild(newOpt);
-        }
-        sel.value = value;
-      }
-      sel.dispatchEvent(new Event("change", { bubbles: true }));
+      writeBack(sel, model.isMulti, value, option, null);
       if (typeof userOnChange === "function") userOnChange(value, option);
     };
     opts.name = "";
-    return new LiveSelect(mount, opts);
+    var instance = new LiveSelect(mount, opts);
+    sel._liveselect = instance;
+    var baseDestroy = instance.destroy.bind(instance);
+    instance.destroy = function() {
+      sel._liveselect = null;
+      baseDestroy();
+    };
+    return instance;
   };
+  function enhanceLive(sel, extra) {
+    var model = readSelectModel(sel);
+    var origStyle = sel.getAttribute("style");
+    var mount = document.createElement("div");
+    sel.parentNode.insertBefore(mount, sel);
+    sel.setAttribute("style", (origStyle ? origStyle + ";" : "") + VISUALLY_HIDDEN);
+    sel.setAttribute("tabindex", "-1");
+    sel.setAttribute("aria-hidden", "true");
+    sel.setAttribute("data-liveselect-enhanced", "live");
+    var state = { suppress: false, observer: null, parentObserver: null, destroyed: false };
+    var opts = Object.assign({
+      source: model.source,
+      value: model.value,
+      valueLabel: model.valueLabel,
+      multiple: model.isMulti,
+      placeholder: model.placeholder || extra.placeholder || "Search\u2026",
+      disabled: sel.disabled
+    }, extra);
+    opts.name = "";
+    delete opts.live;
+    var userOnChange = opts.onChange;
+    opts.onChange = function(value, option) {
+      writeBack(sel, model.isMulti, value, option, state);
+      if (typeof userOnChange === "function") userOnChange(value, option);
+    };
+    var instance = new LiveSelect(mount, opts);
+    sel._liveselect = instance;
+    function reflect() {
+      if (state.destroyed) return;
+      var m = readSelectModel(sel);
+      instance.setDisabled(sel.disabled);
+      instance.setSource(m.source);
+      if (m.isMulti) {
+        instance.setValue(m.value, m.valueLabel);
+      } else {
+        instance.setValue(m.value, m.value ? { value: m.value, label: m.valueLabel } : void 0);
+      }
+      if (m.placeholder && m.placeholder !== instance.opts.placeholder) {
+        instance.opts.placeholder = m.placeholder;
+        if (!instance.isOpen) instance._syncInput();
+      }
+    }
+    function onNativeChange() {
+      if (state.suppress) return;
+      reflect();
+    }
+    function teardown() {
+      if (state.destroyed) return;
+      state.destroyed = true;
+      if (state.observer) state.observer.disconnect();
+      if (state.parentObserver) state.parentObserver.disconnect();
+      sel.removeEventListener("change", onNativeChange);
+      sel.removeEventListener("input", onNativeChange);
+      if (origStyle == null) sel.removeAttribute("style");
+      else sel.setAttribute("style", origStyle);
+      sel.removeAttribute("tabindex");
+      sel.removeAttribute("aria-hidden");
+      sel.removeAttribute("data-liveselect-enhanced");
+      sel._liveselect = null;
+    }
+    var baseDestroy = instance.destroy.bind(instance);
+    instance.destroy = function() {
+      teardown();
+      baseDestroy();
+    };
+    if (typeof MutationObserver !== "undefined") {
+      state.observer = new MutationObserver(function() {
+        if (!sel.isConnected) {
+          instance.destroy();
+          return;
+        }
+        reflect();
+      });
+      state.observer.observe(sel, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeFilter: ["selected", "value", "disabled", "label", "data-sublabel", "multiple"]
+      });
+      if (sel.parentNode) {
+        state.parentObserver = new MutationObserver(function() {
+          if (!sel.isConnected) instance.destroy();
+        });
+        state.parentObserver.observe(sel.parentNode, { childList: true });
+      }
+    }
+    sel.addEventListener("change", onNativeChange);
+    sel.addEventListener("input", onNativeChange);
+    return instance;
+  }
   LiveSelect.remoteSource = function(cfg) {
     cfg = cfg || {};
     var f = cfg.fetch || (typeof fetch !== "undefined" ? fetch.bind(window) : null);

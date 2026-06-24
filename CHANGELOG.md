@@ -3,6 +3,58 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.1.0] - 2026-06-24
+
+### Added
+- **Reactive / live `enhance()` mode (`enhance(select, { live: true })`).** Keeps a
+  framework-managed `<select>` in two-way sync with a liveselect skin, so a
+  reactive host (Meteor Blaze, React, Vue, …) can continuously re-render the
+  `<select>` without desyncing or clobbering the control. The native `<select>`
+  stays in the DOM as the **source of truth** — visually hidden via an accessible
+  off-screen technique (not `display:none`, so its native `name`/`required` still
+  own the form value and block submit with a focusable bubble).
+  - **Observe**: a `MutationObserver` reflects host changes into the UI live —
+    options added/removed/reordered, changed option text/value/disabled, the
+    reactively-flipped selected value, and `disabled` on the select. A controlled
+    host that sets `.value` + dispatches `change` (leaving no DOM mutation) is
+    also caught via a native change/input listener.
+  - **Write back**: a UI pick sets the native `select.value` / matching
+    `option.selected` (creating an option for a brand-new value) and dispatches a
+    single **bubbling `input` + `change`** from the native `<select>`, so existing
+    delegated listeners and plain-`<form>` serialization keep working unchanged.
+    `<select multiple>` toggles `option.selected` per chip.
+  - **No feedback loops**: reflecting from the observer only calls
+    `setSource`/`setValue`/`setDisabled` — which never fire the write-back
+    `onChange` — so an observer→reflect can't re-dispatch a native change, even
+    when the host's change handler re-renders the select to the same value. The
+    write-back is shielded from the native listeners and skips dispatch when
+    nothing actually changed. Reflecting never collapses an open menu or blurs the
+    input, so a host re-render mid-interaction is non-disruptive.
+  - **Idempotent**: `enhance()` on an already-enhanced select returns the existing
+    instance (a host can safely re-scan + re-enhance the DOM). `destroy()` — or
+    removing the `<select>` from the DOM — disconnects the observer, restores the
+    native select, and tears down the UI.
+- **Auto-mounter now upgrades `<select data-liveselect>`.** `liveselect-auto.js`
+  enhances every tagged `<select>` on load **and** watches the document for
+  framework-inserted matching selects (and `[data-liveselect-mount]` divs),
+  enhancing them live as they appear. Idempotent per the above. Exposes
+  `LiveSelectAuto.enhanceOne` / `observe` alongside the existing `mountAll` /
+  `mountOne`.
+
+### Tests
+- Added `test/live-enhance.test.js` (jsdom): host-driven option add/remove/select/
+  disable reflect into the UI; a UI pick writes back exactly one bubbling
+  `input`+`change` on the native select and a delegated parent listener sees it;
+  no feedback loop when the host re-renders to the same value; re-enhance is a
+  no-op; `destroy()` and DOM removal tear down; `<form>` `FormData` serializes the
+  native value by `name`; `<select multiple>` reflects + writes back; the
+  auto-mounter enhances a `<select data-liveselect>` inserted after load.
+
+### Notes
+- The default (snapshot-once) `enhance()` is unchanged and remains the default;
+  live mode is strictly opt-in via `{ live: true }`. Zero runtime dependencies and
+  all existing behavior are preserved.
+
 ## [4.0.5] - 2026-06-24
 
 ### Docs

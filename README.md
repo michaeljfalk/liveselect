@@ -19,6 +19,7 @@ single source in `src/` by a dev-only esbuild step; see [Building from source](#
 - 🗂 **Any data source** — a plain **array** _or_ an **async function** (wire it to **MongoDB** via the included Express backend, or anything else).
 - ➕ **`[+ Add new]` row** — appears when the typed text has no match; your `onCreate` can do _anything_ (open a modal, POST to a server, push to an array) and return the new option to auto-select it.
 - 🔁 **Drop-in `<select>` replacement** — `LiveSelect.enhance(selectEl)` upgrades an existing `<select>` in place; a hidden `<input name>` means it submits inside a plain `<form>` like a native control. Also upgrades `<select multiple>`.
+- ⚡ **Reactive live mode** — `enhance(selectEl, { live: true })` keeps the native `<select>` as the source of truth and stays in two-way sync with a `MutationObserver` while a reactive host (Blaze/React/Vue) re-renders it; write-backs fire bubbling `input`+`change` so existing handlers and `<form>` serialization keep working.
 - 🏷 **Multiple selection** — `multiple: true` for removable chips, array values, `maxItems`, and configurable form submission (`repeat`/`bracket`/`delimited`). See [Multiple selection](#multiple-selection).
 - 🎨 **Fully themeable** — restyle with `--liveselect-*` CSS custom properties or target the BEM-ish classes; ships a light and dark theme.
 - 🧩 **Custom item templates** — render each result row _and_ the `[+ Add]` row however you like with `renderOption` / `renderCreate`; return a DOM node (XSS-safe) or an HTML string. See [Custom item templates](#custom-item-templates).
@@ -131,6 +132,45 @@ new LiveSelect('#picker', {
 <script>
   LiveSelect.enhance('#country'); // existing change listeners keep working
 </script>
+```
+
+### Reactive / live `enhance()` — skin a framework-managed `<select>`
+
+In a reactive host (Meteor Blaze, React, Vue, …) the `<select>` is continuously
+**re-rendered**: options are added/removed from a data loop and the selected
+option flips as state changes. The default `enhance()` snapshots once and goes
+stale. Pass `{ live: true }` to keep the native `<select>` in the DOM as the
+**source of truth** (visually hidden, still submitting and validating) with the
+liveselect UI as a live skin:
+
+```js
+LiveSelect.enhance('#country', { live: true });
+```
+
+- **Observes** the `<select>` with a `MutationObserver` and reflects host changes
+  into the UI live — options added/removed/reordered, changed option
+  text/value/disabled, the reactively-flipped selected value, and `disabled` on
+  the select itself (a controlled-input host that sets `.value` + dispatches
+  `change` is also picked up).
+- **Writes back**: a UI pick sets the native `select.value` / matching
+  `option.selected` and dispatches **bubbling `input` + `change`** from the
+  native `<select>`, so your existing delegated listeners and plain-`<form>`
+  serialization keep working untouched. `<select multiple>` is supported.
+- **No feedback loops**: reflecting from the observer never re-fires a write-back,
+  and a write-back is shielded from the observer — a host that re-renders to the
+  same value in its change handler won't ping-pong, and an open menu / input
+  focus survives a host re-render.
+- **Idempotent**: `enhance()` on an already-enhanced select returns the existing
+  instance, so a host can safely re-scan and re-enhance. `destroy()` (or removing
+  the `<select>` from the DOM) disconnects the observer and tears down the UI.
+
+Tag selects declaratively and let `liveselect-auto.js` enhance them — on load
+**and** for framework-inserted rows added later:
+
+```html
+<select data-liveselect name="country">…</select>
+<script src="liveselect.js"></script>
+<script src="liveselect-auto.js"></script>
 ```
 
 ### MongoDB-backed (async source)

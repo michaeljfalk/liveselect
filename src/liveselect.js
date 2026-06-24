@@ -1083,37 +1083,135 @@
 
   // -- static: enhance an existing <select> ----------------------------------
 
+  // Visually-hidden (but still focusable & form-submitting) style for the native
+  // <select> kept as the source of truth in LIVE enhance mode. Unlike
+  // display:none, this keeps the element in the layout/focus/validation tree, so
+  // its native `required` can still block submit with a focusable bubble.
+  var VISUALLY_HIDDEN =
+    'position:absolute;width:1px;height:1px;padding:0;margin:-1px;' +
+    'overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0';
+
   /**
-   * enhance — progressively replace a native <select> with a LiveSelect
-   * so existing forms get the uniform look with zero markup changes.
+   * Read a native <select>'s current options/selection/placeholder into the
+   * control's option model. Re-run on every observed mutation in live mode.
+   */
+  function readSelectModel(sel) {
+    var isMulti = sel.multiple;
+    var source = [];
+    var value = '', valueLabel = '';
+    var values = [], labels = [];
+    var placeholder = '';
+    for (var i = 0; i < sel.options.length; i++) {
+      var op = sel.options[i];
+      // A blank-value, unselected first option is treated as the placeholder and
+      // kept out of the result list.
+      if (op.value === '' && !placeholder && !op.selected) { placeholder = op.textContent.trim(); continue; }
+      source.push({
+        value: op.value,
+        label: op.textContent.trim(),
+        sublabel: op.getAttribute('data-sublabel') || '',
+        disabled: op.disabled,
+      });
+      if (op.selected) {
+        value = op.value; valueLabel = op.textContent.trim();
+        values.push(op.value); labels.push(op.textContent.trim());
+      }
+    }
+    return {
+      isMulti: isMulti,
+      source: source,
+      placeholder: placeholder,
+      value: isMulti ? values : value,
+      valueLabel: isMulti ? labels : valueLabel,
+    };
+  }
+
+  /** Stable signature of a <select>'s current selected values (order-insensitive). */
+  function selectedSig(sel) {
+    var v = [];
+    for (var i = 0; i < sel.options.length; i++) if (sel.options[i].selected) v.push(sel.options[i].value);
+    return v.sort().join('');
+  }
+
+  /**
+   * Write a LiveSelect selection BACK into the native <select>: set the matching
+   * option.selected / the select's value (creating an option for a brand-new
+   * value), then dispatch bubbling `input` + `change` so the host's existing
+   * delegated listeners and plain-form serialization keep working unchanged.
+   * `state.suppress` shields our own dispatch from the live observer/listeners so
+   * a write-back never ping-pongs into a reflect. We skip the dispatch entirely
+   * when nothing actually changed, so a no-op pick can't fire a spurious change.
+   */
+  function writeBack(sel, isMulti, value, option, state) {
+    if (state) state.suppress = true;
+    var before = isMulti ? selectedSig(sel) : sel.value;
+    var addedOption = false;
+
+    if (isMulti) {
+      var set = {};
+      value.forEach(function (v) { set[v] = true; });
+      value.forEach(function (v) {
+        if (!Array.prototype.some.call(sel.options, function (o) { return o.value === v; })) {
+          var added = document.createElement('option');
+          added.value = v; added.textContent = v; sel.appendChild(added);
+          addedOption = true;
+        }
+      });
+      Array.prototype.forEach.call(sel.options, function (o) { o.selected = !!set[o.value]; });
+    } else {
+      if (option && !Array.prototype.some.call(sel.options, function (o) { return o.value === value; })) {
+        var newOpt = document.createElement('option');
+        newOpt.value = value; newOpt.textContent = option.label;
+        sel.appendChild(newOpt);
+        addedOption = true;
+      }
+      sel.value = value;
+    }
+
+    var after = isMulti ? selectedSig(sel) : sel.value;
+    var changed = addedOption || before !== after;
+    if (changed) {
+      sel.dispatchEvent(new Event('input', { bubbles: true }));
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (state) state.suppress = false;
+  }
+
+  /**
+   * enhance — progressively replace a native <select> with a LiveSelect so
+   * existing forms get the uniform look with zero markup changes.
    *
-   * It reads the <option>s into an array source, copies name/value/required/
-   * disabled, hides the original <select>, and syncs the selection BACK into it
-   * on change — so any code already listening to the <select> keeps working.
+   * Two modes:
+   *   • default (snapshot) — reads the <option>s once into an array source, hides
+   *     the original <select> with display:none, and syncs the selection BACK on
+   *     change. Best for static forms.
+   *   • live (`{ live: true }`) — keeps the native <select> in the DOM as the
+   *     authoritative source of options/value/handlers, visually hidden, and runs
+   *     a MutationObserver so a reactive host (Blaze/React/Vue) can re-render the
+   *     <select> (add/remove/reorder options, flip the selected value, toggle
+   *     disabled) and the liveselect UI reflects every change live. User picks are
+   *     written back with bubbling input+change. See enhanceLive for the loop
+   *     guards. Best for framework-managed selects.
+   *
+   * Calling enhance on an already-enhanced <select> is a no-op: it returns the
+   * existing instance, so a host can safely re-scan and re-enhance the DOM.
    *
    * @param {HTMLSelectElement|string} selectElOrSelector
-   * @param {object} [extra] — extra LiveSelect options (allowCreate, etc.)
+   * @param {object} [extra] — extra LiveSelect options (allowCreate, live, …)
    * @returns {LiveSelect}
    */
   LiveSelect.enhance = function (selectElOrSelector, extra) {
     var sel = resolveEl(selectElOrSelector);
     if (!sel || sel.tagName !== 'SELECT') throw new Error('LiveSelect.enhance: a <select> is required.');
+    extra = extra || {};
 
-    var isMulti = sel.multiple;
-    var source = [];
-    var initial = '', initialLabel = '';
-    var initialValues = [], initialLabels = [];
-    var placeholder = '';
-    for (var i = 0; i < sel.options.length; i++) {
-      var op = sel.options[i];
-      if (op.value === '' && !placeholder) { placeholder = op.textContent.trim(); continue; }
-      source.push({ value: op.value, label: op.textContent.trim(), sublabel: op.getAttribute('data-sublabel') || '' });
-      if (op.selected) {
-        initial = op.value; initialLabel = op.textContent.trim();
-        initialValues.push(op.value); initialLabels.push(op.textContent.trim());
-      }
-    }
+    // Idempotent (req #5): re-enhancing returns the existing instance.
+    if (sel._liveselect) return sel._liveselect;
 
+    if (extra.live) return enhanceLive(sel, extra);
+
+    // ---- default (snapshot-once) enhance -----------------------------------
+    var model = readSelectModel(sel);
     var wasRequired = sel.required;
 
     var mount = document.createElement('div');
@@ -1129,39 +1227,19 @@
     if (wasRequired) sel.required = false;
 
     var opts = Object.assign({
-      source: source,
+      source: model.source,
       name: sel.getAttribute('name') || '',
-      value: isMulti ? initialValues : initial,
-      valueLabel: isMulti ? initialLabels : initialLabel,
-      multiple: isMulti,
-      placeholder: placeholder || (extra && extra.placeholder) || 'Search…',
+      value: model.value,
+      valueLabel: model.valueLabel,
+      multiple: model.isMulti,
+      placeholder: model.placeholder || extra.placeholder || 'Search…',
       required: wasRequired,
       disabled: sel.disabled,
-    }, extra || {});
+    }, extra);
 
     var userOnChange = opts.onChange;
     opts.onChange = function (value, option) {
-      if (isMulti) {
-        // Reflect the array of values back into the <select multiple>.
-        var set = {};
-        value.forEach(function (v) { set[v] = true; });
-        value.forEach(function (v) {
-          if (!Array.prototype.some.call(sel.options, function (o) { return o.value === v; })) {
-            var added = document.createElement('option');
-            added.value = v; added.textContent = v; sel.appendChild(added);
-          }
-        });
-        Array.prototype.forEach.call(sel.options, function (o) { o.selected = !!set[o.value]; });
-      } else {
-        // Reflect a single value into the <select> + create the option if new.
-        if (option && !Array.prototype.some.call(sel.options, function (o) { return o.value === value; })) {
-          var newOpt = document.createElement('option');
-          newOpt.value = value; newOpt.textContent = option.label;
-          sel.appendChild(newOpt);
-        }
-        sel.value = value;
-      }
-      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      writeBack(sel, model.isMulti, value, option, null);
       if (typeof userOnChange === 'function') userOnChange(value, option);
     };
 
@@ -1170,8 +1248,142 @@
     // the same field twice.
     opts.name = '';
 
-    return new LiveSelect(mount, opts);
+    var instance = new LiveSelect(mount, opts);
+    sel._liveselect = instance;
+    var baseDestroy = instance.destroy.bind(instance);
+    instance.destroy = function () { sel._liveselect = null; baseDestroy(); };
+    return instance;
   };
+
+  /**
+   * enhanceLive — keep a framework-managed <select> in two-way sync with a
+   * liveselect skin. The native <select> stays in the DOM as the source of
+   * truth; a MutationObserver reflects host re-renders into the UI, and user
+   * picks are written back with bubbling input+change.
+   *
+   * No feedback loops, by construction:
+   *   • reflect() only calls setSource/setValue/setDisabled — none of which fire
+   *     the write-back onChange — so a reflect can never re-dispatch a native
+   *     change. The observer→reflect path is therefore inherently loop-free, even
+   *     when the host's change handler re-renders the <select> to the same value.
+   *   • write-back sets `state.suppress` so the native change/input listeners
+   *     ignore the events it dispatches (they fire synchronously during the
+   *     write-back); writeBack also skips dispatch when nothing changed.
+   *   • reflect uses setSource/setValue, which never collapse an open menu or
+   *     blur the input, so a host re-render mid-interaction is non-disruptive.
+   */
+  function enhanceLive(sel, extra) {
+    var model = readSelectModel(sel);
+    var origStyle = sel.getAttribute('style');
+
+    var mount = document.createElement('div');
+    sel.parentNode.insertBefore(mount, sel);
+
+    // Keep the native <select> as the source of truth, visually hidden and out of
+    // the tab order (the liveselect input is the focusable control now). It keeps
+    // its name/required so it still owns the form value and native validation.
+    sel.setAttribute('style', (origStyle ? origStyle + ';' : '') + VISUALLY_HIDDEN);
+    sel.setAttribute('tabindex', '-1');
+    sel.setAttribute('aria-hidden', 'true');
+    sel.setAttribute('data-liveselect-enhanced', 'live');
+
+    var state = { suppress: false, observer: null, parentObserver: null, destroyed: false };
+
+    var opts = Object.assign({
+      source: model.source,
+      value: model.value,
+      valueLabel: model.valueLabel,
+      multiple: model.isMulti,
+      placeholder: model.placeholder || extra.placeholder || 'Search…',
+      disabled: sel.disabled,
+    }, extra);
+
+    // The native <select> owns the form value; the control's own hidden input
+    // stays nameless so the field isn't submitted twice. `live` isn't a
+    // LiveSelect option.
+    opts.name = '';
+    delete opts.live;
+
+    var userOnChange = opts.onChange;
+    opts.onChange = function (value, option) {
+      writeBack(sel, model.isMulti, value, option, state);
+      if (typeof userOnChange === 'function') userOnChange(value, option);
+    };
+
+    var instance = new LiveSelect(mount, opts);
+    sel._liveselect = instance;
+
+    // Reflect the native <select>'s current state into the liveselect UI.
+    function reflect() {
+      if (state.destroyed) return;
+      var m = readSelectModel(sel);
+      instance.setDisabled(sel.disabled);
+      instance.setSource(m.source);
+      if (m.isMulti) {
+        instance.setValue(m.value, m.valueLabel);
+      } else {
+        instance.setValue(m.value, m.value ? { value: m.value, label: m.valueLabel } : undefined);
+      }
+      if (m.placeholder && m.placeholder !== instance.opts.placeholder) {
+        instance.opts.placeholder = m.placeholder;
+        if (!instance.isOpen) instance._syncInput();
+      }
+    }
+
+    function onNativeChange() {
+      // A host that sets the value via property + dispatches change (controlled
+      // input) leaves no DOM mutation for the observer — catch it here. Skip our
+      // own write-back dispatch (shielded by suppress).
+      if (state.suppress) return;
+      reflect();
+    }
+
+    function teardown() {
+      if (state.destroyed) return;
+      state.destroyed = true;
+      if (state.observer) state.observer.disconnect();
+      if (state.parentObserver) state.parentObserver.disconnect();
+      sel.removeEventListener('change', onNativeChange);
+      sel.removeEventListener('input', onNativeChange);
+      // Restore the native <select> to a normal, interactive element.
+      if (origStyle == null) sel.removeAttribute('style'); else sel.setAttribute('style', origStyle);
+      sel.removeAttribute('tabindex');
+      sel.removeAttribute('aria-hidden');
+      sel.removeAttribute('data-liveselect-enhanced');
+      sel._liveselect = null;
+    }
+
+    // destroy() (req #6) tears down the observer + listeners, restores the native
+    // <select>, then removes the UI.
+    var baseDestroy = instance.destroy.bind(instance);
+    instance.destroy = function () { teardown(); baseDestroy(); };
+
+    if (typeof MutationObserver !== 'undefined') {
+      // Observe option list / text / attribute / selection changes on the select.
+      state.observer = new MutationObserver(function () {
+        if (!sel.isConnected) { instance.destroy(); return; }   // removed → tear down
+        reflect();
+      });
+      state.observer.observe(sel, {
+        childList: true, subtree: true, characterData: true, attributes: true,
+        attributeFilter: ['selected', 'value', 'disabled', 'label', 'data-sublabel', 'multiple'],
+      });
+
+      // Removing the <select> is a childList mutation on its PARENT, not on the
+      // select itself — watch the parent so we can tear down on removal (req #6).
+      if (sel.parentNode) {
+        state.parentObserver = new MutationObserver(function () {
+          if (!sel.isConnected) instance.destroy();
+        });
+        state.parentObserver.observe(sel.parentNode, { childList: true });
+      }
+    }
+
+    sel.addEventListener('change', onNativeChange);
+    sel.addEventListener('input', onNativeChange);
+
+    return instance;
+  }
 
   /**
    * remoteSource — build { source, resolve, onCreate } wired to a
