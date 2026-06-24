@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.0.5] - 2026-06-24
+
+### Docs
+- Point the Meteor 3 / Blaze usage at the real ESM import. The Blaze example
+  imported the UMD `dist/liveselect.js` — the exact Meteor 3 + rspack scenario
+  the 4.0.4 fix addressed. It now imports the package (which resolves to
+  `dist/liveselect.mjs`), with a vendored-`.mjs` fallback noted; IMPLEMENTATION.md
+  §7 mirrors this. No code changes — ships the doc refresh that landed just after
+  the 4.0.4 publish.
+
 ## [4.0.4] - 2026-06-24
 
 ### Fixed

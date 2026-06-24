@@ -1,4 +1,4 @@
-/*! @michaeljfalk/liveselect v4.0.4 | MIT License | https://github.com/michaeljfalk/liveselect */
+/*! @michaeljfalk/liveselect v4.0.5 | MIT License | https://github.com/michaeljfalk/liveselect */
 (function (root, factory) {
   if (typeof define === 'function' && define.amd) define([], factory);
   else if (typeof module === 'object' && module.exports) module.exports = factory();

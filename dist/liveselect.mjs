@@ -1,4 +1,4 @@
-/*! @michaeljfalk/liveselect v4.0.4 | MIT License | https://github.com/michaeljfalk/liveselect */
+/*! @michaeljfalk/liveselect v4.0.5 | MIT License | https://github.com/michaeljfalk/liveselect */
 
 // src/liveselect.js
 var BLUR_CLOSE_MS = 150;
